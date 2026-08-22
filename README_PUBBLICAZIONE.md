@@ -1,4 +1,4 @@
-# POTENZIALE 1.2 — pubblicazione da smartphone
+# POTENZIALE 1.2.1 — pubblicazione da smartphone
 
 Questo pacchetto è pronto per essere pubblicato come sito statico HTTPS e poi installato come PWA su Android.
 

@@ -1,4 +1,4 @@
-# POTENZIALE 1.2
+# POTENZIALE 1.2.1
 
 Versione PWA mobile-ready.
 

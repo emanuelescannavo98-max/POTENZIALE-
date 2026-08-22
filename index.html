@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>POTENZIALE 1.2</title><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#111827">
+<title>POTENZIALE 1.2.1</title><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#111827">
 <style>
 :root{--bg:#f4f6f8;--card:#fff;--text:#17202a;--muted:#6b7280;--border:#e5e7eb}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -32,7 +32,7 @@ h1,h2,h3,p{margin-top:0}.hero h1{font-size:34px;margin-bottom:5px}.muted{color:v
 </head>
 <body>
 <div class="app safe"><button id="installBtn" class="install">📲 Installa POTENZIALE sul telefono</button>
-<div class="top"><div><div class="brand">POTENZIALE 1.2</div><div class="mission">Smettere di sprecare il mio potenziale.</div></div><div style="display:flex;gap:7px"><button onclick="exportData()">Backup</button><button onclick="importData()">Ripristina</button><button onclick="resetData()">Reset</button></div></div>
+<div class="top"><div><div class="brand">POTENZIALE 1.2.1</div><div class="mission">Smettere di sprecare il mio potenziale.</div></div><div style="display:flex;gap:7px"><button onclick="exportData()">Backup</button><button onclick="importData()">Ripristina</button><button onclick="resetData()">Reset</button></div></div>
 <div class="nav" id="nav"></div><main id="content"></main></div>
 <button class="fab" onclick="quickAdd()">+</button>
 <script>
@@ -49,6 +49,12 @@ goals:[
 {id:2,name:"Primo patrimonio",target:10000,current:0,cat:"Economia"},
 {id:3,name:"Primo milione",target:1000000,current:0,cat:"Visione"}],
 metrics:{discipline:30,body:40,money:10,career:10,relations:40,environment:40,growth:30}};
+/* Migration from POTENZIALE 1.2: keep the original three starter tasks as today's generated plan. */
+if(state.tasks.length && !state.tasks.some(t=>t.auto===true)){
+  const starter=["Sistema una zona della casa","Scrivi 5 righe sul tuo futuro","Cammina con il cane"];
+  state.tasks.forEach(t=>{if(t.date===today() && starter.includes(t.title)) t.auto=true});
+  save();
+}
 const pages={oggi:"🏠 Oggi",task:"☑️ Task",progressi:"📊 Progressi",money:"💰 Economia",obiettivi:"🎯 Obiettivi",checkin:"🌙 Check-in",aperte:"📋 Aperte"};
 let page="oggi";
 function save(){localStorage.setItem(KEY,JSON.stringify(state))}
@@ -56,10 +62,73 @@ function go(p){page=p;render()}
 function renderNav(){nav.innerHTML=Object.entries(pages).map(([k,v])=>`<button class="${page===k?'active':''}" onclick="go('${k}')">${v}</button>`).join("")}
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 function pct(a,b){return b?Math.min(100,Math.round(a/b*100)):0}
-function taskRows(arr=state.tasks.filter(t=>t.date===today())){return arr.length?arr.map(t=>`<div class="task"><button class="check ${t.done?'done':''}" onclick="toggleTask(${t.id})">${t.done?'✓':''}</button><div class="task-title ${t.done?'doneText':''}"><b>${esc(t.title)}</b><div class="small muted">${esc(t.cat)} · ${t.mins} min</div></div></div>`).join(""):`<div class="empty">Nessuna task.</div>`}
+/* Daily Task Engine: creates a different, deterministic plan for each day. */
+const DAILY_PLANS=[
+  [
+    ["Sistema una zona della casa","Ambiente",10],
+    ["Scrivi 5 righe sul tuo futuro","Crescita",5],
+    ["Cammina con il cane","Corpo",15]
+  ],
+  [
+    ["Fai 15 minuti di ordine senza telefono","Disciplina",15],
+    ["Impara una cosa utile per il tuo lavoro","Carriera",20],
+    ["Fai una camminata di almeno 20 minuti","Corpo",20]
+  ],
+  [
+    ["Controlla le spese di ieri","Economia",10],
+    ["Scrivi la prossima azione del tuo obiettivo principale","Crescita",10],
+    ["Sistema un cassetto o una superficie","Ambiente",10]
+  ],
+  [
+    ["Fai 10 minuti di movimento","Corpo",10],
+    ["Completa una piccola cosa che stai rimandando","Disciplina",15],
+    ["Dedica 10 minuti a una persona importante","Relazioni",10]
+  ],
+  [
+    ["Metti da parte anche solo 1€ per un obiettivo","Economia",5],
+    ["Leggi o studia per 15 minuti","Crescita",15],
+    ["Prepara una zona della casa per domani","Ambiente",10]
+  ],
+  [
+    ["Fai una passeggiata senza usare il telefono","Corpo",20],
+    ["Scrivi le 3 priorità della prossima settimana","Carriera",10],
+    ["Elimina o archivia 10 cose inutili dal telefono","Disciplina",10]
+  ],
+  [
+    ["Controlla il saldo e scegli una spesa da evitare","Economia",10],
+    ["Scrivi 5 righe su cosa vuoi migliorare nella prossima settimana","Crescita",10],
+    ["Fai 20 minuti di attività fisica leggera","Corpo",20]
+  ]
+];
+function dateObj(dateStr){const [y,m,d]=dateStr.split('-').map(Number);return new Date(y,m-1,d)}
+function dayIndex(dateStr){
+  const d=dateObj(dateStr), start=new Date(d.getFullYear(),0,1);
+  return Math.floor((d-start)/86400000)%DAILY_PLANS.length;
+}
+function ensureDailyTasks(dateStr){
+  const existing=state.tasks.filter(t=>t.date===dateStr && t.auto===true);
+  if(existing.length>=3)return;
+  const plan=DAILY_PLANS[dayIndex(dateStr)];
+  plan.slice(existing.length).forEach((x,i)=>{
+    state.tasks.push({id:Number(String(dateStr.replace(/-/g,''))+String(i+1).padStart(2,'0')),title:x[0],cat:x[1],mins:x[2],done:false,date:dateStr,auto:true});
+  });
+  save();
+}
+function dateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function tomorrow(){const d=dateObj(today());d.setDate(d.getDate()+1);return dateKey(d)}
+function prettyDate(dateStr){return dateObj(dateStr).toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+function dailyPreview(dateStr){
+  ensureDailyTasks(dateStr);
+  return state.tasks.filter(t=>t.date===dateStr).slice(0,3).map(t=>`<div class="task"><div class="check" style="flex:0 0 24px"></div><div class="task-title"><b>${esc(t.title)}</b><div class="small muted">${esc(t.cat)} · ${t.mins} min</div></div></div>`).join('');
+}
+function taskRows(arr=null){if(arr===null){ensureDailyTasks(today());arr=state.tasks.filter(t=>t.date===today())}return arr.length?arr.map(t=>`<div class="task"><button class="check ${t.done?'done':''}" onclick="toggleTask(${t.id})">${t.done?'✓':''}</button><div class="task-title ${t.done?'doneText':''}"><b>${esc(t.title)}</b><div class="small muted">${esc(t.cat)} · ${t.mins} min</div></div></div>`).join(""):`<div class="empty">Nessuna task.</div>`}
 function pillarHTML(){const n={discipline:"🧠 Disciplina",body:"💪 Corpo",money:"💰 Economia",career:"💼 Carriera",relations:"❤️ Relazioni",environment:"🏠 Ambiente",growth:"🎯 Crescita"};return Object.entries(state.metrics).map(([k,v])=>`<div class="pillar"><div class="row"><b>${n[k]}</b><span>${v}</span></div><div class="progress"><div class="bar" style="width:${v}%"></div></div></div>`).join("")}
-function home(){let ts=state.tasks.filter(t=>t.date===today()),done=ts.filter(t=>t.done).length,score=Math.round(done/Math.max(ts.length,1)*100),avg=Math.round(Object.values(state.metrics).reduce((a,b)=>a+b,0)/7),ins=state.transactions.filter(x=>x.type==="in").reduce((a,x)=>a+x.amount,0),out=state.transactions.filter(x=>x.type==="out").reduce((a,x)=>a+x.amount,0);return `<div class="grid"><section class="card s8 hero"><span class="badge">LIVELLO ${state.profile.level} · RIACCENSIONE</span><h1>Oggi.</h1><p class="muted">${new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p><h3>🎯 Le tue task</h3>${taskRows()}<div style="margin-top:15px"><div class="row"><b>Progresso</b><b>${done}/${ts.length}</b></div><div class="progress"><div class="bar" style="width:${score}%"></div></div></div></section><section class="card s4"><h3>🔥 Momentum</h3><div class="big">${done*10}</div><p class="muted">La continuità conta più della perfezione.</p><h3>📊 Potenziale Score</h3><div class="big">${avg}/100</div></section><section class="card s6"><h3>📈 Stato dei pilastri</h3><div class="pillars">${pillarHTML()}</div></section><section class="card s6"><h3>💰 Money</h3><div class="money">€${(ins-out).toFixed(2)}</div><p class="muted">Saldo dei movimenti registrati</p><button onclick="go('money')">Apri economia →</button></section></div>`}
-function tasksPage(){return `<div class="grid"><section class="card s8"><div class="row"><h2>Task</h2><button onclick="addTask()">+ Nuova</button></div><p class="muted">Oggi</p>${taskRows()}<h3 style="margin-top:25px">Future</h3>${taskRows(state.tasks.filter(t=>t.date>today()))}</section><section class="card s4"><h3>Statistiche</h3><p>Totali: <b>${state.tasks.length}</b></p><p>Completate: <b>${state.tasks.filter(x=>x.done).length}</b></p></section></div>`}
+function home(){
+  ensureDailyTasks(today());
+  const ts=state.tasks.filter(t=>t.date===today()),done=ts.filter(t=>t.done).length,score=Math.round(done/Math.max(ts.length,1)*100),avg=Math.round(Object.values(state.metrics).reduce((a,b)=>a+b,0)/7),ins=state.transactions.filter(x=>x.type==="in").reduce((a,x)=>a+x.amount,0),out=state.transactions.filter(x=>x.type==="out").reduce((a,x)=>a+x.amount,0),tom=tomorrow();
+  return `<div class="grid"><section class="card s8 hero"><span class="badge">LIVELLO ${state.profile.level} · RIACCENSIONE</span><h1>Oggi.</h1><p class="muted">${prettyDate(today())}</p><h3>🎯 Le tue task</h3>${taskRows()}<div style="margin-top:15px"><div class="row"><b>Progresso</b><b>${done}/${ts.length}</b></div><div class="progress"><div class="bar" style="width:${score}%"></div></div></div></section><section class="card s4"><h3>🔥 Momentum</h3><div class="big">${done*10}</div><p class="muted">La continuità conta più della perfezione.</p><h3>📊 Potenziale Score</h3><div class="big">${avg}/100</div></section><section class="card s6"><h3>📅 Domani</h3><p class="muted">${prettyDate(tom)}</p>${dailyPreview(tom)}<button onclick="go('task')">Vedi tutte le task →</button></section><section class="card s6"><h3>📈 Stato dei pilastri</h3><div class="pillars">${pillarHTML()}</div></section><section class="card s6"><h3>💰 Money</h3><div class="money">€${(ins-out).toFixed(2)}</div><p class="muted">Saldo dei movimenti registrati</p><button onclick="go('money')">Apri economia →</button></section></div>`
+}
+function tasksPage(){ensureDailyTasks(today());ensureDailyTasks(tomorrow());return `<div class="grid"><section class="card s8"><div class="row"><h2>Task</h2><button onclick="addTask()">+ Nuova</button></div><p class="muted">Oggi</p>${taskRows()}<h3 style="margin-top:25px">Future</h3>${taskRows(state.tasks.filter(t=>t.date>today()))}</section><section class="card s4"><h3>Statistiche</h3><p>Totali: <b>${state.tasks.length}</b></p><p>Completate: <b>${state.tasks.filter(x=>x.done).length}</b></p></section></div>`}
 function progressPage(){return `<div class="grid"><section class="card s8"><h2>Progressi</h2><p class="muted">Confronto con il Punto Zero.</p>${Object.entries(state.metrics).map(([k,v])=>`<div style="margin:16px 0"><div class="row"><b>${k.toUpperCase()}</b><b>${v}/100</b></div><div class="progress"><div class="bar" style="width:${v}%"></div></div></div>`).join("")}</section><section class="card s4"><h3>Missione</h3><p><b>${esc(state.profile.mission)}</b></p><p class="muted">Il punteggio è uno strumento, non un giudizio sul tuo valore.</p></section></div>`}
 function moneyPage(){let ins=state.transactions.filter(x=>x.type==="in").reduce((a,x)=>a+x.amount,0),outs=state.transactions.filter(x=>x.type==="out").reduce((a,x)=>a+x.amount,0);return `<div class="grid"><section class="card s8"><div class="row"><h2>💰 Economia personale</h2><button onclick="addTransaction()">+ Movimento</button></div><div class="formgrid"><div><div class="muted">Entrate</div><div class="money positive">€${ins.toFixed(2)}</div></div><div><div class="muted">Uscite</div><div class="money negative">€${outs.toFixed(2)}</div></div></div><hr style="border:0;border-top:1px solid var(--border);margin:20px 0"><h3>Movimenti</h3>${state.transactions.length?state.transactions.slice().reverse().map(x=>`<div class="task"><div class="task-title"><b>${x.type==="in"?"+":"−"} €${x.amount.toFixed(2)}</b><div class="small muted">${esc(x.cat)} · ${esc(x.note||"")}</div></div><span>${x.date}</span></div>`).join(""):"<div class='empty'>Nessun movimento registrato.</div>"}</section><section class="card s4"><h3>🎯 Obiettivi economici</h3>${state.goals.filter(g=>g.cat==="Economia").map(g=>`<div style="margin:16px 0"><div class="row"><b>${esc(g.name)}</b><b>${pct(g.current,g.target)}%</b></div><div class="small muted">€${g.current.toFixed(2)} / €${g.target.toFixed(2)}</div><div class="progress"><div class="bar" style="width:${pct(g.current,g.target)}%"></div></div></div>`).join("")}</section></div>`}
 function goalsPage(){return `<div class="grid"><section class="card s8"><div class="row"><h2>🎯 Obiettivi</h2><button onclick="addGoal()">+ Obiettivo</button></div>${state.goals.map(g=>`<div class="task"><div class="task-title"><b>${esc(g.name)}</b><div class="small muted">${esc(g.cat)} · €${g.current.toFixed(2)} / €${g.target.toFixed(2)}</div><div class="progress"><div class="bar" style="width:${pct(g.current,g.target)}%"></div></div></div><button onclick="updateGoal(${g.id})">Aggiorna</button></div>`).join("")}</section></div>`}
@@ -67,14 +136,14 @@ function checkinPage(){let last=state.checkins[state.checkins.length-1];return `
 function openPage(){return `<div class="grid"><section class="card s8"><div class="row"><h2>📋 Cose aperte</h2><button onclick="addOpen()">+ Aggiungi</button></div>${state.openItems.map((x,i)=>`<div class="task"><button class="check" onclick="resolveOpen(${i})">✓</button><div class="task-title"><b>${esc(x)}</b><div class="small muted">Aperto</div></div><button onclick="makeTask(${i})">→ Task</button></div>`).join("")||"<div class='empty'>Nessuna cosa aperta. Ottimo.</div>"}</section></div>`}
 function render(){renderNav();content.innerHTML={oggi:home,task:tasksPage,progressi:progressPage,money:moneyPage,obiettivi:goalsPage,checkin:checkinPage,aperte:openPage}[page]()}
 function toggleTask(id){let t=state.tasks.find(x=>x.id===id);t.done=!t.done;save();render()}
-function addTask(){let title=prompt("Nome task:");if(!title)return;let mins=Number(prompt("Minuti stimati:","10"))||10;state.tasks.push({id:Date.now(),title,cat:"Generale",mins,done:false,date:today()});save();render()}
+function addTask(){let title=prompt("Nome task:");if(!title)return;let mins=Number(prompt("Minuti stimati:","10"))||10;state.tasks.push({id:Date.now(),title,cat:"Generale",mins,done:false,date:today(),auto:false});save();render()}
 function quickAdd(){let x=prompt("1 = task | 2 = movimento | 3 = cosa aperta");if(x==="1")addTask();else if(x==="2")addTransaction();else if(x==="3")addOpen()}
 function addTransaction(){let amount=Number(prompt("Importo €:"));if(!amount)return;let type=confirm("È un'entrata? OK=sì, Annulla=uscita")?"in":"out",cat=prompt("Categoria:","Altro")||"Altro",note=prompt("Nota:","")||"";state.transactions.push({id:Date.now(),amount,type,cat,note,date:today()});save();render()}
 function addGoal(){let name=prompt("Nome obiettivo:");if(!name)return;let target=Number(prompt("Target €:","1000"))||1000;state.goals.push({id:Date.now(),name,target,current:0,cat:"Personale"});save();render()}
 function updateGoal(id){let g=state.goals.find(x=>x.id===id),v=Number(prompt("Valore attuale:",g.current));if(!isNaN(v)){g.current=v;save();render()}}
 function addOpen(){let x=prompt("Cosa hai da fare/risolvere?");if(x){state.openItems.push(x);save();render()}}
 function resolveOpen(i){state.openItems.splice(i,1);save();render()}
-function makeTask(i){let title=state.openItems[i];state.tasks.push({id:Date.now(),title,cat:"Cose aperte",mins:10,done:false,date:today()});state.openItems.splice(i,1);save();render()}
+function makeTask(i){let title=state.openItems[i];state.tasks.push({id:Date.now(),title,cat:"Cose aperte",mins:10,done:false,date:today(),auto:false});state.openItems.splice(i,1);save();render()}
 function saveCheckin(e){e.preventDefault();state.checkins.push({date:today(),mood:+mood.value,energy:+energy.value,stress:+stress.value,sleep:+sleep.value,phone:+phone.value,smoke:smoke.value,obstacle:obstacle.value});save();alert("Check-in salvato.");render()}
 function resetData(){if(confirm("Resetta tutti i dati locali?")){localStorage.removeItem(KEY);location.reload()}}
 render();
