@@ -1,12 +1,18 @@
-# POTENZIALE 1.2.1
+# POTENZIALE 1.3
 
-Versione PWA mobile-ready.
+Sistema personale offline-first per task, continuità, progressi, check-in, obiettivi ed economia personale.
 
-- Installazione dalla schermata di installazione del browser compatibile.
-- Funzionamento offline dopo il primo caricamento.
-- Task, progressi, obiettivi, economia e check-in salvati localmente.
-- Backup e ripristino dei dati in JSON.
-- Manifest, icone e service worker aggiornati.
+## Struttura
+- Oggi: task del giorno, momentum, score e piano adattivo.
+- Task: gestione delle attività e dei giorni successivi.
+- Progressi: andamento settimanale e pilastri.
+- Economia: movimenti, saldo e target mensili.
+- Obiettivi: traguardi misurabili.
+- Check-in: dati utilizzati dal motore adattivo.
+- Aperte: cose da risolvere trasformabili in task.
 
-## Importante
-Per installarla come app Android dal browser, la cartella deve essere servita tramite HTTPS (oppure da localhost in sviluppo). Un file ZIP aperto direttamente dal telefono non può attivare correttamente una PWA installabile.
+## Dati
+I dati restano nel browser tramite localStorage. Backup e ripristino permettono di esportare/importare lo stato.
+
+## Migrazione
+La prima apertura della 1.3 prova automaticamente a migrare `potenziale_v12` in `potenziale_v13`, mantenendo task, obiettivi, movimenti, check-in e metriche.

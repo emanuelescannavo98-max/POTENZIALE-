@@ -1,27 +1,11 @@
-# POTENZIALE 1.2.1 — pubblicazione da smartphone
+# Pubblicazione POTENZIALE 1.3 su GitHub Pages
 
-Questo pacchetto è pronto per essere pubblicato come sito statico HTTPS e poi installato come PWA su Android.
+1. Sostituisci nel repository i file `index.html`, `manifest.json`, `sw.js` e i file README/CHANGELOG.
+2. Mantieni `icon-192.png` e `icon-512.png`.
+3. Fai commit su `main`.
+4. GitHub Pages deve usare `main` e `/ (root)` come sorgente.
+5. Apri il sito e fai un refresh completo se il browser mostra ancora la 1.2.1.
+6. Se l'app era già installata, aprila di nuovo: il Service Worker 1.3.0 aggiorna la cache.
 
-## Metodo consigliato: GitHub Pages
-
-1. Crea/accedi a un account GitHub.
-2. Crea un nuovo repository, ad esempio `potenziale`.
-3. Carica **tutti i file di questa cartella**, mantenendo anche `.github/workflows/pages.yml` e `.nojekyll`.
-4. Vai in **Settings → Pages**.
-5. In **Build and deployment → Source** seleziona **GitHub Actions**.
-6. Attendi il completamento del workflow `Deploy POTENZIALE to GitHub Pages`.
-7. Apri l'URL Pages indicato da GitHub dal tuo Android.
-8. In Chrome usa il menu del browser e scegli **Installa app** / **Aggiungi alla schermata Home** (la dicitura può variare).
-
-GitHub Pages pubblica il sito su HTTPS, requisito fondamentale per l'installazione PWA e per il service worker. Il workflow incluso automatizza la pubblicazione a ogni aggiornamento del ramo `main`.
-
-## Dati personali
-POTENZIALE salva i dati applicativi nel `localStorage` del dispositivo e offre backup/ripristino JSON. Non inserire password, dati bancari o altre informazioni sensibili nel codice del repository.
-
-## Struttura
-- `index.html` — applicazione
-- `manifest.json` — configurazione PWA
-- `sw.js` — cache/offline
-- `icon-192.png`, `icon-512.png` — icone
-- `.github/workflows/pages.yml` — deploy GitHub Pages
-- `.nojekyll` — pubblicazione statica
+URL atteso del progetto:
+https://emanuelescannavo98-max.github.io/POTENZIALE-/
