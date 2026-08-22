@@ -1,18 +1,10 @@
-# POTENZIALE 1.3
+# POTENZIALE 1.3.1
 
-Sistema personale offline-first per task, continuità, progressi, check-in, obiettivi ed economia personale.
+Carica i file nella root del repository GitHub Pages:
+- index.html
+- manifest.json
+- sw.js
+- CHANGELOG_1.3.1.md
+- README.md
 
-## Struttura
-- Oggi: task del giorno, momentum, score e piano adattivo.
-- Task: gestione delle attività e dei giorni successivi.
-- Progressi: andamento settimanale e pilastri.
-- Economia: movimenti, saldo e target mensili.
-- Obiettivi: traguardi misurabili.
-- Check-in: dati utilizzati dal motore adattivo.
-- Aperte: cose da risolvere trasformabili in task.
-
-## Dati
-I dati restano nel browser tramite localStorage. Backup e ripristino permettono di esportare/importare lo stato.
-
-## Migrazione
-La prima apertura della 1.3 prova automaticamente a migrare `potenziale_v12` in `potenziale_v13`, mantenendo task, obiettivi, movimenti, check-in e metriche.
+I dati sono salvati nel browser tramite localStorage. Usa Backup per esportarli.
