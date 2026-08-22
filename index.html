@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>POTENZIALE 1.2</title><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#111827">
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--text:#17202a;--muted:#6b7280;--border:#e5e7eb}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+.app{max-width:1100px;margin:auto;padding:18px 18px 90px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.brand{font-weight:900;letter-spacing:.08em}.mission{font-size:12px;color:var(--muted)}
+button{border:0;border-radius:12px;padding:10px 13px;cursor:pointer;font-weight:700}
+.nav{display:flex;gap:8px;overflow:auto;margin-bottom:18px}.nav button{background:#fff;border:1px solid var(--border);white-space:nowrap}.nav .active{background:#111827;color:#fff}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:17px;box-shadow:0 4px 18px #00000008}
+.s12{grid-column:span 12}.s8{grid-column:span 8}.s6{grid-column:span 6}.s4{grid-column:span 4}
+h1,h2,h3,p{margin-top:0}.hero h1{font-size:34px;margin-bottom:5px}.muted{color:var(--muted)}.big{font-size:30px;font-weight:900}
+.progress{height:10px;background:#e5e7eb;border-radius:99px;overflow:hidden}.bar{height:100%;background:#111827;border-radius:99px}
+.task{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}.task:last-child{border-bottom:0}
+.check{width:24px;height:24px;border:2px solid #9ca3af;border-radius:8px;background:white;padding:0}.check.done{background:#111827;color:white}
+.task-title{flex:1}.doneText{text-decoration:line-through;color:var(--muted)}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#eef2ff;font-size:12px;font-weight:800}
+.money{font-size:28px;font-weight:900}.row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.pillars{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.pillar{padding:12px;background:#f8fafc;border-radius:14px}
+.small{font-size:12px}.input{width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin:5px 0 10px;font:inherit}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.positive{color:#16a34a}.negative{color:#dc2626}.empty{padding:20px;text-align:center;color:var(--muted)}
+.fab{position:fixed;right:22px;bottom:22px;width:56px;height:56px;border-radius:50%;background:#111827;color:white;font-size:24px}
+@media(max-width:760px){.s8,.s6,.s4{grid-column:span 12}.pillars,.formgrid{grid-template-columns:1fr}.hero h1{font-size:28px}}
+
+.install{display:none;background:#111827;color:#fff;border-radius:14px;padding:11px 13px;font-weight:800;margin-bottom:14px;width:100%}.install.show{display:block}.safe{padding-bottom:env(safe-area-inset-bottom)}
+@media(max-width:760px){button{min-height:44px}.check{min-width:44px;min-height:44px}.fab{bottom:calc(22px + env(safe-area-inset-bottom))}}
+</style>
+</head>
+<body>
+<div class="app safe"><button id="installBtn" class="install">📲 Installa POTENZIALE sul telefono</button>
+<div class="top"><div><div class="brand">POTENZIALE 1.2</div><div class="mission">Smettere di sprecare il mio potenziale.</div></div><div style="display:flex;gap:7px"><button onclick="exportData()">Backup</button><button onclick="importData()">Ripristina</button><button onclick="resetData()">Reset</button></div></div>
+<div class="nav" id="nav"></div><main id="content"></main></div>
+<button class="fab" onclick="quickAdd()">+</button>
+<script>
+const KEY="potenziale_v12", today=()=>new Date().toISOString().slice(0,10);
+let state=JSON.parse(localStorage.getItem(KEY)||"null")||{
+profile:{name:"Emanuele",mission:"Smettere di sprecare il mio potenziale.",level:0},
+tasks:[
+{id:1,title:"Sistema una zona della casa",cat:"Ambiente",mins:10,done:false,date:today()},
+{id:2,title:"Scrivi 5 righe sul tuo futuro",cat:"Crescita",mins:5,done:false,date:today()},
+{id:3,title:"Cammina con il cane",cat:"Corpo",mins:15,done:false,date:today()}],
+openItems:["Chiamare il tecnico per il condizionatore","Sistemare Sanicomb"],transactions:[],checkins:[],
+goals:[
+{id:1,name:"Fondo emergenza",target:3000,current:0,cat:"Economia"},
+{id:2,name:"Primo patrimonio",target:10000,current:0,cat:"Economia"},
+{id:3,name:"Primo milione",target:1000000,current:0,cat:"Visione"}],
+metrics:{discipline:30,body:40,money:10,career:10,relations:40,environment:40,growth:30}};
+const pages={oggi:"🏠 Oggi",task:"☑️ Task",progressi:"📊 Progressi",money:"💰 Economia",obiettivi:"🎯 Obiettivi",checkin:"🌙 Check-in",aperte:"📋 Aperte"};
+let page="oggi";
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function go(p){page=p;render()}
+function renderNav(){nav.innerHTML=Object.entries(pages).map(([k,v])=>`<button class="${page===k?'active':''}" onclick="go('${k}')">${v}</button>`).join("")}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function pct(a,b){return b?Math.min(100,Math.round(a/b*100)):0}
+function taskRows(arr=state.tasks.filter(t=>t.date===today())){return arr.length?arr.map(t=>`<div class="task"><button class="check ${t.done?'done':''}" onclick="toggleTask(${t.id})">${t.done?'✓':''}</button><div class="task-title ${t.done?'doneText':''}"><b>${esc(t.title)}</b><div class="small muted">${esc(t.cat)} · ${t.mins} min</div></div></div>`).join(""):`<div class="empty">Nessuna task.</div>`}
+function pillarHTML(){const n={discipline:"🧠 Disciplina",body:"💪 Corpo",money:"💰 Economia",career:"💼 Carriera",relations:"❤️ Relazioni",environment:"🏠 Ambiente",growth:"🎯 Crescita"};return Object.entries(state.metrics).map(([k,v])=>`<div class="pillar"><div class="row"><b>${n[k]}</b><span>${v}</span></div><div class="progress"><div class="bar" style="width:${v}%"></div></div></div>`).join("")}
+function home(){let ts=state.tasks.filter(t=>t.date===today()),done=ts.filter(t=>t.done).length,score=Math.round(done/Math.max(ts.length,1)*100),avg=Math.round(Object.values(state.metrics).reduce((a,b)=>a+b,0)/7),ins=state.transactions.filter(x=>x.type==="in").reduce((a,x)=>a+x.amount,0),out=state.transactions.filter(x=>x.type==="out").reduce((a,x)=>a+x.amount,0);return `<div class="grid"><section class="card s8 hero"><span class="badge">LIVELLO ${state.profile.level} · RIACCENSIONE</span><h1>Oggi.</h1><p class="muted">${new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p><h3>🎯 Le tue task</h3>${taskRows()}<div style="margin-top:15px"><div class="row"><b>Progresso</b><b>${done}/${ts.length}</b></div><div class="progress"><div class="bar" style="width:${score}%"></div></div></div></section><section class="card s4"><h3>🔥 Momentum</h3><div class="big">${done*10}</div><p class="muted">La continuità conta più della perfezione.</p><h3>📊 Potenziale Score</h3><div class="big">${avg}/100</div></section><section class="card s6"><h3>📈 Stato dei pilastri</h3><div class="pillars">${pillarHTML()}</div></section><section class="card s6"><h3>💰 Money</h3><div class="money">€${(ins-out).toFixed(2)}</div><p class="muted">Saldo dei movimenti registrati</p><button onclick="go('money')">Apri economia →</button></section></div>`}
+function tasksPage(){return `<div class="grid"><section class="card s8"><div class="row"><h2>Task</h2><button onclick="addTask()">+ Nuova</button></div><p class="muted">Oggi</p>${taskRows()}<h3 style="margin-top:25px">Future</h3>${taskRows(state.tasks.filter(t=>t.date>today()))}</section><section class="card s4"><h3>Statistiche</h3><p>Totali: <b>${state.tasks.length}</b></p><p>Completate: <b>${state.tasks.filter(x=>x.done).length}</b></p></section></div>`}
+function progressPage(){return `<div class="grid"><section class="card s8"><h2>Progressi</h2><p class="muted">Confronto con il Punto Zero.</p>${Object.entries(state.metrics).map(([k,v])=>`<div style="margin:16px 0"><div class="row"><b>${k.toUpperCase()}</b><b>${v}/100</b></div><div class="progress"><div class="bar" style="width:${v}%"></div></div></div>`).join("")}</section><section class="card s4"><h3>Missione</h3><p><b>${esc(state.profile.mission)}</b></p><p class="muted">Il punteggio è uno strumento, non un giudizio sul tuo valore.</p></section></div>`}
+function moneyPage(){let ins=state.transactions.filter(x=>x.type==="in").reduce((a,x)=>a+x.amount,0),outs=state.transactions.filter(x=>x.type==="out").reduce((a,x)=>a+x.amount,0);return `<div class="grid"><section class="card s8"><div class="row"><h2>💰 Economia personale</h2><button onclick="addTransaction()">+ Movimento</button></div><div class="formgrid"><div><div class="muted">Entrate</div><div class="money positive">€${ins.toFixed(2)}</div></div><div><div class="muted">Uscite</div><div class="money negative">€${outs.toFixed(2)}</div></div></div><hr style="border:0;border-top:1px solid var(--border);margin:20px 0"><h3>Movimenti</h3>${state.transactions.length?state.transactions.slice().reverse().map(x=>`<div class="task"><div class="task-title"><b>${x.type==="in"?"+":"−"} €${x.amount.toFixed(2)}</b><div class="small muted">${esc(x.cat)} · ${esc(x.note||"")}</div></div><span>${x.date}</span></div>`).join(""):"<div class='empty'>Nessun movimento registrato.</div>"}</section><section class="card s4"><h3>🎯 Obiettivi economici</h3>${state.goals.filter(g=>g.cat==="Economia").map(g=>`<div style="margin:16px 0"><div class="row"><b>${esc(g.name)}</b><b>${pct(g.current,g.target)}%</b></div><div class="small muted">€${g.current.toFixed(2)} / €${g.target.toFixed(2)}</div><div class="progress"><div class="bar" style="width:${pct(g.current,g.target)}%"></div></div></div>`).join("")}</section></div>`}
+function goalsPage(){return `<div class="grid"><section class="card s8"><div class="row"><h2>🎯 Obiettivi</h2><button onclick="addGoal()">+ Obiettivo</button></div>${state.goals.map(g=>`<div class="task"><div class="task-title"><b>${esc(g.name)}</b><div class="small muted">${esc(g.cat)} · €${g.current.toFixed(2)} / €${g.target.toFixed(2)}</div><div class="progress"><div class="bar" style="width:${pct(g.current,g.target)}%"></div></div></div><button onclick="updateGoal(${g.id})">Aggiorna</button></div>`).join("")}</section></div>`}
+function checkinPage(){let last=state.checkins[state.checkins.length-1];return `<div class="grid"><section class="card s8"><h2>🌙 Check-in</h2><form onsubmit="saveCheckin(event)"><label>Umore <b id="moodv">5</b>/10</label><input class="input" type="range" min="1" max="10" value="5" id="mood" oninput="moodv.textContent=this.value"><label>Energia <b id="energyv">5</b>/10</label><input class="input" type="range" min="1" max="10" value="5" id="energy" oninput="energyv.textContent=this.value"><label>Stress <b id="stressv">5</b>/10</label><input class="input" type="range" min="1" max="10" value="5" id="stress" oninput="stressv.textContent=this.value"><label>Ore di sonno</label><input class="input" type="number" step=".1" id="sleep" value="5"><label>Tempo telefono (ore)</label><input class="input" type="number" step=".1" id="phone" value="8"><label>Fumo</label><input class="input" id="smoke" placeholder="es. 2 sigarette, 1 canna"><label>Ostacolo principale</label><select class="input" id="obstacle"><option>nessuno</option><option>ansia</option><option>telefono</option><option>stanchezza</option><option>fumo</option><option>mancanza di tempo</option><option>mancanza di motivazione</option><option>altro</option></select><button type="submit">Salva check-in</button></form></section><section class="card s4"><h3>Ultimo check-in</h3>${last?`<p>${last.date}</p><p>Umore: ${last.mood}/10</p><p>Energia: ${last.energy}/10</p><p>Sonno: ${last.sleep}h</p>`:"<p class='muted'>Ancora nessun dato.</p>"}</section></div>`}
+function openPage(){return `<div class="grid"><section class="card s8"><div class="row"><h2>📋 Cose aperte</h2><button onclick="addOpen()">+ Aggiungi</button></div>${state.openItems.map((x,i)=>`<div class="task"><button class="check" onclick="resolveOpen(${i})">✓</button><div class="task-title"><b>${esc(x)}</b><div class="small muted">Aperto</div></div><button onclick="makeTask(${i})">→ Task</button></div>`).join("")||"<div class='empty'>Nessuna cosa aperta. Ottimo.</div>"}</section></div>`}
+function render(){renderNav();content.innerHTML={oggi:home,task:tasksPage,progressi:progressPage,money:moneyPage,obiettivi:goalsPage,checkin:checkinPage,aperte:openPage}[page]()}
+function toggleTask(id){let t=state.tasks.find(x=>x.id===id);t.done=!t.done;save();render()}
+function addTask(){let title=prompt("Nome task:");if(!title)return;let mins=Number(prompt("Minuti stimati:","10"))||10;state.tasks.push({id:Date.now(),title,cat:"Generale",mins,done:false,date:today()});save();render()}
+function quickAdd(){let x=prompt("1 = task | 2 = movimento | 3 = cosa aperta");if(x==="1")addTask();else if(x==="2")addTransaction();else if(x==="3")addOpen()}
+function addTransaction(){let amount=Number(prompt("Importo €:"));if(!amount)return;let type=confirm("È un'entrata? OK=sì, Annulla=uscita")?"in":"out",cat=prompt("Categoria:","Altro")||"Altro",note=prompt("Nota:","")||"";state.transactions.push({id:Date.now(),amount,type,cat,note,date:today()});save();render()}
+function addGoal(){let name=prompt("Nome obiettivo:");if(!name)return;let target=Number(prompt("Target €:","1000"))||1000;state.goals.push({id:Date.now(),name,target,current:0,cat:"Personale"});save();render()}
+function updateGoal(id){let g=state.goals.find(x=>x.id===id),v=Number(prompt("Valore attuale:",g.current));if(!isNaN(v)){g.current=v;save();render()}}
+function addOpen(){let x=prompt("Cosa hai da fare/risolvere?");if(x){state.openItems.push(x);save();render()}}
+function resolveOpen(i){state.openItems.splice(i,1);save();render()}
+function makeTask(i){let title=state.openItems[i];state.tasks.push({id:Date.now(),title,cat:"Cose aperte",mins:10,done:false,date:today()});state.openItems.splice(i,1);save();render()}
+function saveCheckin(e){e.preventDefault();state.checkins.push({date:today(),mood:+mood.value,energy:+energy.value,stress:+stress.value,sleep:+sleep.value,phone:+phone.value,smoke:smoke.value,obstacle:obstacle.value});save();alert("Check-in salvato.");render()}
+function resetData(){if(confirm("Resetta tutti i dati locali?")){localStorage.removeItem(KEY);location.reload()}}
+render();
+</script>
+<script>
+/* POTENZIALE Adaptive Engine v1 */
+function adaptiveAnalysis(){
+  const recent=state.checkins.slice(-7);
+  const taskRecent=state.tasks.filter(t=>t.date>=new Date(Date.now()-6*86400000).toISOString().slice(0,10));
+  const completion=taskRecent.length?taskRecent.filter(t=>t.done).length/taskRecent.length:0;
+  const energy=recent.length?recent.reduce((a,x)=>a+x.energy,0)/recent.length:5;
+  const stress=recent.length?recent.reduce((a,x)=>a+x.stress,0)/recent.length:5;
+  let mode="STANDARD", load=3;
+  if(completion<.45 || stress>=7 || energy<=3){mode="RIAVVIO";load=1}
+  else if(completion>.80 && stress<=5 && energy>=6){mode="ESPANSIONE";load=4}
+  return {mode,load,completion,energy,stress};
+}
+</script>
+<script>
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}
+let deferredInstall=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e;installBtn.classList.add("show")});
+installBtn?.addEventListener("click",async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;installBtn.classList.remove("show")});
+window.addEventListener("appinstalled",()=>installBtn.classList.remove("show"));
+function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="potenziale-backup-"+today()+".json";a.click();URL.revokeObjectURL(a.href)}
+function importData(){const input=document.createElement("input");input.type="file";input.accept="application/json";input.onchange=async()=>{try{const data=JSON.parse(await input.files[0].text());if(!data.tasks||!data.profile)throw 0;state=data;save();render();alert("Backup ripristinato.")}catch{alert("File non valido.")}};input.click()}
+</script></body></html>
